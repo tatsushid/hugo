@@ -72,6 +72,10 @@ func (p PagesGroup) Reverse() PagesGroup {
 	return p
 }
 
+var (
+	errorType   = reflect.TypeOf((*error)(nil)).Elem()
+)
+
 func (p Pages) GroupBy(key string, order ...string) (PagesGroup, error) {
 	if len(p) < 1 {
 		return nil, nil
@@ -83,16 +87,46 @@ func (p Pages) GroupBy(key string, order ...string) (PagesGroup, error) {
 		direction = "desc"
 	}
 
+	var ft interface{}
 	ppt := reflect.TypeOf(&Page{})
 	ft, ok := ppt.Elem().FieldByName(key)
 	if !ok {
-		return nil, errors.New("No such field in Page struct")
+		m, ok := ppt.MethodByName(key)
+		if !ok {
+			return nil, errors.New(key + " is neither a field nor a method of Page")
+		}
+		if m.Type.NumIn() != 1 || m.Type.NumOut() == 0 || m.Type.NumOut() > 2 {
+			return nil, errors.New(key + " is a Page method but you can't use it with GroupBy")
+		}
+		if m.Type.NumOut() == 1 && m.Type.Out(0).Implements(errorType) {
+			return nil, errors.New(key + " is a Page method but you can't use it with GroupBy")
+		}
+		if m.Type.NumOut() == 2 && !m.Type.Out(1).Implements(errorType) {
+			return nil, errors.New(key + " is a Page method but you can't use it with GroupBy")
+		}
+		ft = m
 	}
-	tmp := reflect.MakeMap(reflect.MapOf(ft.Type, reflect.SliceOf(ppt)))
+
+	var tmp reflect.Value
+	switch e := ft.(type) {
+	case reflect.StructField:
+		tmp = reflect.MakeMap(reflect.MapOf(e.Type, reflect.SliceOf(ppt)))
+	case reflect.Method:
+		tmp = reflect.MakeMap(reflect.MapOf(e.Type.Out(0), reflect.SliceOf(ppt)))
+	}
 
 	for _, e := range p {
 		ppv := reflect.ValueOf(e)
-		fv := ppv.Elem().FieldByName(key)
+		var fv reflect.Value
+		switch ft.(type) {
+		case reflect.StructField:
+			fv = ppv.Elem().FieldByName(key)
+		case reflect.Method:
+			fv = ppv.MethodByName(key).Call([]reflect.Value{})[0]
+		}
+		if !fv.IsValid() {
+			continue
+		}
 		if !tmp.MapIndex(fv).IsValid() {
 			tmp.SetMapIndex(fv, reflect.MakeSlice(reflect.SliceOf(ppt), 0, 0))
 		}
