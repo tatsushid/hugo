@@ -296,10 +296,19 @@ func TestIntersect(t *testing.T) {
 	}
 }
 
+type X struct {
+	A, B string
+}
+
+func (x X) ReturnA() string {
+	return x.A
+}
+
+func (x *X) ReturnB() string {
+	return x.B
+}
+
 func TestWhere(t *testing.T) {
-	type X struct {
-		A, B string
-	}
 	for i, this := range []struct {
 		sequence interface{}
 		key      interface{}
@@ -311,6 +320,8 @@ func TestWhere(t *testing.T) {
 		{[]X{{"a", "b"}, {"c", "d"}, {"e", "f"}}, "B", "f", []X{{"e", "f"}}},
 		{[]*map[int]string{&map[int]string{1: "a", 2: "m"}, &map[int]string{1: "c", 2: "d"}, &map[int]string{1: "e", 3: "m"}}, 2, "m", []*map[int]string{&map[int]string{1: "a", 2: "m"}}},
 		{[]*X{&X{"a", "b"}, &X{"c", "d"}, &X{"e", "f"}}, "B", "f", []*X{&X{"e", "f"}}},
+		{[]X{{"a", "b"}, {"c", "d"}, {"e", "f"}}, "ReturnA", "e", []X{{"e", "f"}}},
+		{[]*X{&X{"a", "b"}, &X{"c", "d"}, &X{"e", "f"}}, "ReturnB", "f", []*X{&X{"e", "f"}}},
 	} {
 		results, err := Where(this.sequence, this.key, this.match)
 		if err != nil {
