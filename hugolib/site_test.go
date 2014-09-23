@@ -410,6 +410,7 @@ Front Matter with Ordered Pages`)
 var WEIGHTED_PAGE_2 = []byte(`+++
 weight = "6"
 title = "Two"
+publishdate = "2012-03-05"
 +++
 Front Matter with Ordered Pages 2`)
 
@@ -417,6 +418,7 @@ var WEIGHTED_PAGE_3 = []byte(`+++
 weight = "4"
 title = "Three"
 date = "2012-04-06"
+publishdate = "2012-04-06"
 +++
 Front Matter with Ordered Pages 3`)
 
@@ -424,6 +426,7 @@ var WEIGHTED_PAGE_4 = []byte(`+++
 weight = "4"
 title = "Four"
 date = "2012-01-01"
+publishdate = "2012-01-01"
 +++
 Front Matter with Ordered Pages 4. This is longer content`)
 
@@ -470,6 +473,17 @@ func TestOrderedPages(t *testing.T) {
 	rev := bydate.Reverse()
 	if rev[0].Title != "Three" {
 		t.Errorf("Pages in unexpected order. First should be '%s', got '%s'", "Three", rev[0].Title)
+	}
+
+	bypubdate := s.Pages.ByPublishDate()
+
+	if bypubdate[0].Title != "One" {
+		t.Errorf("Pages in unexpected order. First should be '%s', got '%s'", "One", bypubdate[0].Title)
+	}
+
+	rbypubdate := bypubdate.Reverse()
+	if rbypubdate[0].Title != "Three" {
+		t.Errorf("Pages in unexpected order. First should be '%s', got '%s'", "Three", rbypubdate[0].Title)
 	}
 
 	bylength := s.Pages.ByLength()
