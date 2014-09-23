@@ -141,25 +141,25 @@ func (p Pages) GroupBy(key string, order ...string) (PagesGroup, error) {
 	return r, nil
 }
 
-func (p Pages) GroupByDate(format string, order ...string) (PagesGroup, error) {
+func (p Pages) groupByDateField(sorter func(p Pages) Pages, formatter func(p *Page) string, order ...string) (PagesGroup, error) {
 	if len(p) < 1 {
 		return nil, nil
 	}
 
-	sp := p.ByDate()
+	sp := sorter(p)
 
 	if !(len(order) > 0 && (strings.ToLower(order[0]) == "asc" || strings.ToLower(order[0]) == "rev" || strings.ToLower(order[0]) == "reverse")) {
 		sp = sp.Reverse()
 	}
 
-	date := sp[0].Date.Format(format)
+	date := formatter(sp[0])
 	var r []PageGroup
 	r = append(r, PageGroup{Key: date, Pages: make(Pages, 0)})
 	r[0].Pages = append(r[0].Pages, sp[0])
 
 	i := 0
 	for _, e := range sp[1:] {
-		date = e.Date.Format(format)
+		date = formatter(e)
 		if r[i].Key.(string) != date {
 			r = append(r, PageGroup{Key: date})
 			i++
@@ -167,4 +167,24 @@ func (p Pages) GroupByDate(format string, order ...string) (PagesGroup, error) {
 		r[i].Pages = append(r[i].Pages, e)
 	}
 	return r, nil
+}
+
+func (p Pages) GroupByDate(format string, order ...string) (PagesGroup, error) {
+	sorter := func(p Pages) Pages {
+		return p.ByDate()
+	}
+	formatter := func(p *Page) string {
+		return p.Date.Format(format)
+	}
+	return p.groupByDateField(sorter, formatter, order...)
+}
+
+func (p Pages) GroupByPublishDate(format string, order ...string) (PagesGroup, error) {
+	sorter := func(p Pages) Pages {
+		return p.ByPublishDate()
+	}
+	formatter := func(p *Page) string {
+		return p.PublishDate.Format(format)
+	}
+	return p.groupByDateField(sorter, formatter, order...)
 }

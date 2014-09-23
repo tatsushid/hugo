@@ -582,6 +582,23 @@ func TestGroupedPages(t *testing.T) {
 	if len(bydate[0].Pages) != 2 {
 		t.Errorf("PageGroup has unexpected number of pages. First group should have '%d' pages, got '%d' pages", 2, len(bydate[2].Pages))
 	}
+
+	bypubdate, err := s.Pages.GroupByPublishDate("2006")
+	if err != nil {
+		t.Fatalf("Unable to make PageGroup array: %s", err)
+	}
+	if bypubdate[0].Key != "2012" {
+		t.Errorf("PageGroup array in unexpected order. First group key should be '%s', got '%s'", "2012", bypubdate[0].Key)
+	}
+	if bypubdate[1].Key != "0001" {
+		t.Errorf("PageGroup array in unexpected order. Second group key should be '%s', got '%s'", "0001", bypubdate[1].Key)
+	}
+	if bypubdate[0].Pages[0].Title != "Three" {
+		t.Errorf("PageGroup has an unexpected page. Third group's pages should have '%s', got '%s'", "Three", bypubdate[0].Pages[0].Title)
+	}
+	if len(bypubdate[0].Pages) != 3 {
+		t.Errorf("PageGroup has unexpected number of pages. First group should have '%d' pages, got '%d' pages", 3, len(bypubdate[0].Pages))
+	}
 }
 
 var PAGE_WITH_WEIGHTED_TAXONOMIES_2 = []byte(`+++
