@@ -74,6 +74,7 @@ func (p PagesGroup) Reverse() PagesGroup {
 
 var (
 	errorType   = reflect.TypeOf((*error)(nil)).Elem()
+	pagePtrType = reflect.TypeOf((*Page)(nil))
 )
 
 func (p Pages) GroupBy(key string, order ...string) (PagesGroup, error) {
@@ -88,10 +89,9 @@ func (p Pages) GroupBy(key string, order ...string) (PagesGroup, error) {
 	}
 
 	var ft interface{}
-	ppt := reflect.TypeOf(&Page{})
-	ft, ok := ppt.Elem().FieldByName(key)
+	ft, ok := pagePtrType.Elem().FieldByName(key)
 	if !ok {
-		m, ok := ppt.MethodByName(key)
+		m, ok := pagePtrType.MethodByName(key)
 		if !ok {
 			return nil, errors.New(key + " is neither a field nor a method of Page")
 		}
@@ -110,9 +110,9 @@ func (p Pages) GroupBy(key string, order ...string) (PagesGroup, error) {
 	var tmp reflect.Value
 	switch e := ft.(type) {
 	case reflect.StructField:
-		tmp = reflect.MakeMap(reflect.MapOf(e.Type, reflect.SliceOf(ppt)))
+		tmp = reflect.MakeMap(reflect.MapOf(e.Type, reflect.SliceOf(pagePtrType)))
 	case reflect.Method:
-		tmp = reflect.MakeMap(reflect.MapOf(e.Type.Out(0), reflect.SliceOf(ppt)))
+		tmp = reflect.MakeMap(reflect.MapOf(e.Type.Out(0), reflect.SliceOf(pagePtrType)))
 	}
 
 	for _, e := range p {
@@ -128,7 +128,7 @@ func (p Pages) GroupBy(key string, order ...string) (PagesGroup, error) {
 			continue
 		}
 		if !tmp.MapIndex(fv).IsValid() {
-			tmp.SetMapIndex(fv, reflect.MakeSlice(reflect.SliceOf(ppt), 0, 0))
+			tmp.SetMapIndex(fv, reflect.MakeSlice(reflect.SliceOf(pagePtrType), 0, 0))
 		}
 		tmp.SetMapIndex(fv, reflect.Append(tmp.MapIndex(fv), ppv))
 	}
