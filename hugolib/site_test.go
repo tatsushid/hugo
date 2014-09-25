@@ -404,6 +404,7 @@ func TestAbsUrlify(t *testing.T) {
 var WEIGHTED_PAGE_1 = []byte(`+++
 weight = "2"
 title = "One"
+my_param = "foo"
 +++
 Front Matter with Ordered Pages`)
 
@@ -411,6 +412,7 @@ var WEIGHTED_PAGE_2 = []byte(`+++
 weight = "6"
 title = "Two"
 publishdate = "2012-03-05"
+my_param = "foo"
 +++
 Front Matter with Ordered Pages 2`)
 
@@ -419,6 +421,8 @@ weight = "4"
 title = "Three"
 date = "2012-04-06"
 publishdate = "2012-04-06"
+my_param = "bar"
+only_one = "yes"
 +++
 Front Matter with Ordered Pages 3`)
 
@@ -427,6 +431,7 @@ weight = "4"
 title = "Four"
 date = "2012-01-01"
 publishdate = "2012-01-01"
+my_param = "baz"
 +++
 Front Matter with Ordered Pages 4. This is longer content`)
 
@@ -598,6 +603,42 @@ func TestGroupedPages(t *testing.T) {
 	}
 	if len(bypubdate[0].Pages) != 3 {
 		t.Errorf("PageGroup has unexpected number of pages. First group should have '%d' pages, got '%d' pages", 3, len(bypubdate[0].Pages))
+	}
+
+	byparam, err := s.Pages.GroupByParam("my_param", "desc")
+	if err != nil {
+		t.Fatalf("Unable to make PageGroup array: %s", err)
+	}
+	if byparam[0].Key != "foo" {
+		t.Errorf("PageGroup array in unexpected order. First group key should be '%s', got '%s'", "foo", byparam[0].Key)
+	}
+	if byparam[1].Key != "baz" {
+		t.Errorf("PageGroup array in unexpected order. Second group key should be '%s', got '%s'", "baz", byparam[1].Key)
+	}
+	if byparam[2].Key != "bar" {
+		t.Errorf("PageGroup array in unexpected order. Third group key should be '%s', got '%s'", "bar", byparam[2].Key)
+	}
+	if byparam[2].Pages[0].Title != "Three" {
+		t.Errorf("PageGroup has an unexpected page. Third group's pages should have '%s', got '%s'", "Three", byparam[2].Pages[0].Title)
+	}
+	if len(byparam[0].Pages) != 2 {
+		t.Errorf("PageGroup has unexpected number of pages. First group should have '%d' pages, got '%d' pages", 2, len(byparam[0].Pages))
+	}
+
+	_, err = s.Pages.GroupByParam("not_exist")
+	if err == nil {
+		t.Errorf("GroupByParam didn't return an expected error")
+	}
+
+	byOnlyOneParam, err := s.Pages.GroupByParam("only_one")
+	if err != nil {
+		t.Fatalf("Unable to make PageGroup array: %s", err)
+	}
+	if len(byOnlyOneParam) != 1 {
+		t.Errorf("PageGroup array has unexpected elements. Group length should be '%d', got '%d'", 1, len(byOnlyOneParam))
+	}
+	if byOnlyOneParam[0].Key != "yes" {
+		t.Errorf("PageGroup array in unexpected order. First group key should be '%s', got '%s'", "yes", byOnlyOneParam[0].Key)
 	}
 }
 

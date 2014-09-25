@@ -141,6 +141,53 @@ func (p Pages) GroupBy(key string, order ...string) (PagesGroup, error) {
 	return r, nil
 }
 
+func (p Pages) GroupByParam(key string, order ...string) (PagesGroup, error) {
+	if len(p) < 1 {
+		return nil, nil
+	}
+
+	direction := "asc"
+
+	if len(order) > 0 && (strings.ToLower(order[0]) == "desc" || strings.ToLower(order[0]) == "rev" || strings.ToLower(order[0]) == "reverse") {
+		direction = "desc"
+	}
+
+	var tmp reflect.Value
+	var keyt reflect.Type
+	for _, e := range p {
+		param := e.GetParam(key)
+		if param != nil {
+			if _, ok := param.([]string); !ok {
+				keyt = reflect.TypeOf(param)
+				tmp = reflect.MakeMap(reflect.MapOf(keyt, reflect.SliceOf(pagePtrType)))
+				break
+			}
+		}
+	}
+	if !tmp.IsValid() {
+		return nil, errors.New("There is no such a param")
+	}
+
+	for _, e := range p {
+		param := e.GetParam(key)
+		if param == nil || reflect.TypeOf(param) != keyt {
+			continue
+		}
+		v := reflect.ValueOf(param)
+		if !tmp.MapIndex(v).IsValid() {
+			tmp.SetMapIndex(v, reflect.MakeSlice(reflect.SliceOf(pagePtrType), 0, 0))
+		}
+		tmp.SetMapIndex(v, reflect.Append(tmp.MapIndex(v), reflect.ValueOf(e)))
+	}
+
+	var r []PageGroup
+	for _, k := range sortKeys(tmp.MapKeys(), direction) {
+		r = append(r, PageGroup{Key: k.Interface(), Pages: tmp.MapIndex(k).Interface().([]*Page)})
+	}
+
+	return r, nil
+}
+
 func (p Pages) groupByDateField(sorter func(p Pages) Pages, formatter func(p *Page) string, order ...string) (PagesGroup, error) {
 	if len(p) < 1 {
 		return nil, nil
