@@ -18,6 +18,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"time"
 )
 
 type PageGroup struct {
@@ -232,6 +233,29 @@ func (p Pages) GroupByPublishDate(format string, order ...string) (PagesGroup, e
 	}
 	formatter := func(p *Page) string {
 		return p.PublishDate.Format(format)
+	}
+	return p.groupByDateField(sorter, formatter, order...)
+}
+
+func (p Pages) GroupByParamDate(key string, format string, order ...string) (PagesGroup, error) {
+	sorter := func(p Pages) Pages {
+		var r Pages
+		for _, e := range p {
+			param := e.GetParam(key)
+			if param != nil {
+				if _, ok := param.(time.Time); ok {
+					r = append(r, e)
+				}
+			}
+		}
+		pdate := func(p1, p2 *Page) bool {
+			return p1.GetParam(key).(time.Time).Unix() < p2.GetParam(key).(time.Time).Unix()
+		}
+		PageBy(pdate).Sort(r)
+		return r
+	}
+	formatter := func(p *Page) string {
+		return p.GetParam(key).(time.Time).Format(format)
 	}
 	return p.groupByDateField(sorter, formatter, order...)
 }

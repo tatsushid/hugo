@@ -405,6 +405,7 @@ var WEIGHTED_PAGE_1 = []byte(`+++
 weight = "2"
 title = "One"
 my_param = "foo"
+my_date = 1979-05-27T07:32:00Z
 +++
 Front Matter with Ordered Pages`)
 
@@ -423,6 +424,7 @@ date = "2012-04-06"
 publishdate = "2012-04-06"
 my_param = "bar"
 only_one = "yes"
+my_date = 2010-05-27T07:32:00Z
 +++
 Front Matter with Ordered Pages 3`)
 
@@ -432,6 +434,7 @@ title = "Four"
 date = "2012-01-01"
 publishdate = "2012-01-01"
 my_param = "baz"
+my_date = 2010-05-27T07:32:00Z
 +++
 Front Matter with Ordered Pages 4. This is longer content`)
 
@@ -639,6 +642,23 @@ func TestGroupedPages(t *testing.T) {
 	}
 	if byOnlyOneParam[0].Key != "yes" {
 		t.Errorf("PageGroup array in unexpected order. First group key should be '%s', got '%s'", "yes", byOnlyOneParam[0].Key)
+	}
+
+	byParamDate, err := s.Pages.GroupByParamDate("my_date", "2006-01")
+	if err != nil {
+		t.Fatalf("Unable to make PageGroup array: %s", err)
+	}
+	if byParamDate[0].Key != "2010-05" {
+		t.Errorf("PageGroup array in unexpected order. First group key should be '%s', got '%s'", "2010-05", byParamDate[0].Key)
+	}
+	if byParamDate[1].Key != "1979-05" {
+		t.Errorf("PageGroup array in unexpected order. Second group key should be '%s', got '%s'", "1979-05", byParamDate[1].Key)
+	}
+	if byParamDate[1].Pages[0].Title != "One" {
+		t.Errorf("PageGroup has an unexpected page. Second group's pages should have '%s', got '%s'", "One", byParamDate[1].Pages[0].Title)
+	}
+	if len(byParamDate[0].Pages) != 2 {
+		t.Errorf("PageGroup has unexpected number of pages. First group should have '%d' pages, got '%d' pages", 2, len(byParamDate[2].Pages))
 	}
 }
 
